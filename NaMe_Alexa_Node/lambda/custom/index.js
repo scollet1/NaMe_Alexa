@@ -1,6 +1,7 @@
 /* eslint-disable  func-names */
 /* eslint-disable  no-console */
 
+const sys = require('util');
 const request = require('request');
 const Alexa = require('ask-sdk-core');
 const htmlparser = require('htmlparser');
@@ -12,12 +13,14 @@ function parseReq(obj) {
 }
 
 function reqGet(url) {
+  console.log(url);
   request(url, function (error, response, body) {
-    console.log(body);
-    var handler = new htmlparser.DefaultHandler();
+//    console.log(body);
+    var raw = body;
+    var handler = new htmlparser.DefaultHandler;
     var parser = new htmlparser.Parser(handler);
-    parser.parseComplete(body);
-    return (parseReq(handler.dom));
+    parser.parseComplete(raw);
+    return parseReq(sys.inspect(handler.dom, false, null));
   });
 }
 
@@ -39,7 +42,7 @@ const LaunchRequestHandler = {
     return handlerInput.responseBuilder
       .speak(speechText)
       .reprompt(speechText)
-      .withSimpleCard('Hello World', speechText)
+      .withSimpleCard(speechText)
       .getResponse();
   },
 };
@@ -53,7 +56,9 @@ const NameMeaningHandler = {
     this.attributes.name = 'default';//getname;
     this.attributes.gender = 'default';//getgender
 
-    var speechQuery = 'default';/*perform GET
+    var speechQuery = getReq(	URLGET
+    				+this.attributes.gender + '/'
+				+ this.attributes.name + '.htm');/*perform GET
                       (his.attributes.name, this.attributes.gender)*/
 
     return handlerInput.responseBuilder
