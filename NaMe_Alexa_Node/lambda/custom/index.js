@@ -8,23 +8,63 @@ const htmlparser = require('htmlparser');
 
 const URLGET = 'https://www.kabalarians.com/name-meanings/names/';
 
+const parser = require('himalaya');
+
+//*[@id="headerOL"]
+
+function findValue(obj, value) {
+  /*if key in obj: return obj[key]
+    for k, v in obj.items():
+        if isinstance(v,dict):
+            item = _finditem(v, key)
+            if item is not None:
+                return item*/
+  if (!value) {
+    return null;
+  }
+  //console.log(value);
+  for (key in obj) {
+//    console.log('KEY === ', key, ", VALUE === ", obj);
+    if (obj['attributes'] && obj['attributes'][0] && obj['attributes'][0]['value'] && obj['tagName'] == 'div') {    
+      if (obj['attributes'][0]['value'] == value) {
+        console.log('BIG === ', obj);//, key, value);
+	return obj['children'];
+      }
+    } else if (obj[key] !== null && obj[key] instanceof Object) {
+      findValue(obj[key], value);
+    }
+  }
+  return null;
+}
+
 function parseReq(obj) {
-  console.log(obj);
+//  console.log(obj);
+//  console.log('VALUE FOUND === ', findValue(obj, "headerOL"));
 }
 
 function reqGet(url) {
-  console.log(url);
+  //console.log(url);
   request(url, function (error, response, body) {
 //    console.log(body);
     var raw = body;
-    var handler = new htmlparser.DefaultHandler;
+    var cheerio = require('cheerio');
+    $ = cheerio.load(raw);
+    //console.log($);
+    $('#headerOL li').each(function() {
+      console.log($(this).text());
+    });
+    //const html = fs.readFileSync(raw, {encoding: 'utf8'});
+    //const json = parser.parse(raw);
+//    console.log('👉', json);
+    /*var handler = new htmlparser.DefaultHandler;
     var parser = new htmlparser.Parser(handler);
     parser.parseComplete(raw);
-    return parseReq(sys.inspect(handler.dom, false, null));
+    var str = sys.inspect(handler.dom, false, null);*/
+    //return parseReq(json);
   });
 }
 
-console.log(reqGet(URLGET + 'female/' + 'Alexa.htm'));
+reqGet(URLGET + 'female/' + 'Alexa.htm');
 
 const LaunchRequestHandler = {
   canHandle(handlerInput) {
