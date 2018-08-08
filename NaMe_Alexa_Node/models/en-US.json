@@ -1,0 +1,67 @@
+{
+  "interactionModel": {
+    "languageModel": {
+      "invocationName": "name analysis",
+      "intents": [
+        {
+          "name": "AMAZON.CancelIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.HelpIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.StopIntent",
+          "samples": []
+        },
+        {
+          "name": "NameMeaning",
+          "samples": [
+            "hello"
+          ]
+        },
+        {
+          "name": "AnswerIntent",
+          "slots": [
+            {
+              "name": "Answer",
+              "type": "AMAZON.US_FIRST_NAME"
+            },
+            {
+              "name": "Gender",
+              "type": "Gender"
+            }
+          ],
+          "samples": []
+        }
+      ],
+      "types": [
+        {
+          "values": [
+            {
+              "name": {
+                "value": "Other",
+                "synonyms": [
+                  "Queer",
+                  "Non-binary"
+                ]
+              }
+            },
+            {
+              "name": {
+                "value": "Female"
+              }
+            },
+            {
+              "name": {
+                "value": "Male"
+              }
+            }
+          ],
+          "name": "Gender"
+        }
+      ]
+    }
+  }
+}
