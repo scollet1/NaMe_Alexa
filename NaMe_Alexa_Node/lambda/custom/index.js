@@ -55,7 +55,6 @@ const LaunchRequestHandler = {
       speechExample = result;
     });
     speechText = speechIntro + speechExample + speechCap;
-    attr.startedSkill = true;
     attrMan.setSessionAttributes(attr);
     return handlerInput.responseBuilder
       .speak(speechText)
@@ -74,17 +73,11 @@ const LaunchRequestHandler = {
 const YesIntent = {
   canHandle(handlerInput) {
     // only start a new game if yes is said when not playing a game.
-    let isCurrentlyPlaying = false;
     const request = handlerInput.requestEnvelope.request;
     const attributesManager = handlerInput.attributesManager;
     const sessionAttributes = attributesManager.getSessionAttributes();
 
-    if (sessionAttributes.startedSkill &&
-        sessionAttributes.startedSkill == true) {
-      isCurrentlyPlaying = true;
-    }
-
-    return !isCurrentlyPlaying && request.type === 'IntentRequest' && request.intent.name === 'AMAZON.YesIntent';
+    return request.type === 'IntentRequest' && request.intent.name === 'AMAZON.YesIntent';
   },
   handle(handlerInput) {
     const attributesManager = handlerInput.attributesManager;
@@ -147,7 +140,7 @@ const NameMeaningIntentHandler = {
         sessAttr.StartedSkill == true) {
       isStarted = true;
     }
-    return handlerInput.requestEnvelope.request.type === 'IntentRequest';/* &&
+    return isStarted && handlerInput.requestEnvelope.request.type === 'IntentRequest';/* &&
 	   handlerInput.requestEnvelope.request.intent.name === 'NameMeaningIntent';  */
   },
   async handle(handlerInput) {
@@ -243,4 +236,3 @@ exports.handler = skillBuilder
   )
   .addErrorHandlers(ErrorHandler)
   .lambda();
-
