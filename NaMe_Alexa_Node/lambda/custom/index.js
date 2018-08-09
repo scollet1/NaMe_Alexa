@@ -39,7 +39,7 @@ const LaunchRequestHandler = {
   },
   async handle(handlerInput) {
     const attrMan = handlerInput.attributesManager;
-    const attr = await attrMan.getPersistantAttributes || {};
+    const attr = await attrMan.getSessiontAttributes || {};
     if (Object.keys(attr) === 0) {
       attr.name = 'default';
       attr.gender = 'default';
@@ -55,7 +55,6 @@ const LaunchRequestHandler = {
       speechExample = result;
     });
     speechText = speechIntro + speechExample + speechCap;
-    attrMan.setSessionAttributes(attr);
     return handlerInput.responseBuilder
       .speak(speechText)
       .reprompt(speechText)
@@ -79,15 +78,19 @@ const YesIntent = {
     return request.type === 'IntentRequest' && request.intent.name === 'AMAZON.YesIntent';
   },
   handle(handlerInput) {
-    const attributesManager = handlerInput.attributesManager;
+    const attrMan = handlerInput.attributesManager;
     const responseBuilder = handlerInput.responseBuilder;
-    const sessionAttributes = attributesManager.getSessionAttributes();
+    const sessAttr = attrMan.getSessionAttributes();
 
-    sessionAttributes.startedSkill = true;
+    sessAttr.startedSkill = true;
+
+    attrMan.setSessionAttributes(sessAttr);
+
+    console.log("YES INTENT SESSATTR === ", sessAttr);
 
     return responseBuilder
-      .speak('Tell me your name.')
-      .reprompt('Say your name.')
+      .speak('Okay, tell me your name.')
+      .reprompt()
       .getResponse();
   },
 };
@@ -114,7 +117,7 @@ const NoIntent = {
     const sessionAttributes = attributesManager.getSessionAttributes();
 
     sessionAttributes.startedSkill = false;
-    attributesManager.setPersistentAttributes(sessionAttributes);
+//    attributesManager.setPersistentAttributes(sessionAttributes);
 
     //await attributesManager.savePersistentAttributes();
 
@@ -128,7 +131,7 @@ const NoIntent = {
  *
  */
 
-const AnswerIntentHandler = {
+/*const AnswerIntentHandler = {
   canHandle(handlerInput) {
     let stateful = false;
     const attrMan = handlerInput.attributeManager;
@@ -155,21 +158,25 @@ const AnswerIntentHandler = {
     sessAttr.name = this.event.request.intent.slots.Name.value;
     sessAttr.gender = this.event.request.intent.slots.Gender.value;
   },
-};
+};*/
 
 const NameMeaningIntentHandler = {
   canHandle(handlerInput) {
     let isStarted = false;
     const attrMan = handlerInput.attributesManager;
     const sessAttr = attrMan.getSessionAttributes();
-    console.log(sessAttr);
+//    console.log('NAMEANING SESSATTR === ', sessAttr);
     
-    if (sessAttr.startedSkill &&
-        sessAttr.StartedSkill == true) {
+/*    if (sessAttr.startedSkill &&
+        sessAttr.StartedSkill === true) {
       isStarted = true;
     }
-    return isStarted && handlerInput.requestEnvelope.request.type === 'IntentRequest' &&
-	   handlerInput.requestEnvelope.request.intent.name === 'NameMeaningIntent';
+
+    console.log('TESTING TO SEE IF INTENT IS RETURNED FALSE OR TRUE === ',
+	   isStarted, handlerInput.requestEnvelope.request.type === 'IntentRequest');*/
+
+    return sessAttr.startedSkill && handlerInput.requestEnvelope.request.type === 'IntentRequest';
+//	   && handlerInput.requestEnvelope.request.intent.name === 'NameMeaningIntent';
   },
   async handle(handlerInput) {
     const attrMan = handlerInput.attributesManager;
@@ -177,11 +184,14 @@ const NameMeaningIntentHandler = {
     const speechIntro = 'Your name means: ';
     var userNameMeans;
 
-    this.emit(':elicitSlot', 'Name', 'What is your name?');
-    sessAttr.name = this.event.request.intent.slots.Name.value;
+    //this.emit(':elicitSlot', 'Name', 'What is your name?');
+    console.log("HANDLER INPUT === ", handlerInput);
+    //sessAttr.name = this.event.request.intent.slots.Name.value;
 
-    this.emit(':elicitSlot', 'Gender', 'What is your gender?');
-    sessAttr.gender = this.event.request.intent.slots.Gender.value;
+    console.log("DEBUGGING SLOT EMMITER === ", sessAttr.name);
+
+    self.emit(':elicitSlot', 'Gender', 'What is your gender?');
+    sessAttr.gender = self.event.request.intent.slots.Gender.value;
 
     searchName(URLGET + sessAttr.gender + '/' + sessAttr.name + '.htm').then(function(result) {
       userNameMeans = result;
