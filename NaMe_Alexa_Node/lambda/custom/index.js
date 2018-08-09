@@ -128,6 +128,35 @@ const NoIntent = {
  *
  */
 
+const AnswerIntentHandler = {
+  canHandle(handlerInput) {
+    let stateful = false;
+    const attrMan = handlerInput.attributeManager;
+    const sessAttr = attrMan.getSessionAttributes();
+    console.log(sessAttr);
+
+    if (sessAttr.startedSkill &&
+        sessAttr.startedSkill == true &&
+        sessAttr.name &&
+	sessAttr.gender) {
+	stateful = true;
+    }
+    return stateful && handlerInput.requestEnvelope.request.type == 'IntentRequest' &&
+           handlerInput.requestEnvelope.request.intent.name === 'AnswerIntent';
+
+  },
+  handle(handlerInput) {
+    const attrMan = handlerInput.attributeManager;
+    const sessAttr = attrMan.getSessionAttributes();
+
+    this.emit(':elicitSlot', 'Name', 'What is your name?');
+    this.emit(':elicitSlot', 'Gender', 'What is your gender?');
+    
+    sessAttr.name = this.event.request.intent.slots.Name.value;
+    sessAttr.gender = this.event.request.intent.slots.Gender.value;
+  },
+};
+
 const NameMeaningIntentHandler = {
   canHandle(handlerInput) {
     let isStarted = false;
@@ -145,13 +174,16 @@ const NameMeaningIntentHandler = {
   async handle(handlerInput) {
     const attrMan = handlerInput.attributesManager;
     const sessAttr = attrMan.getSessionAttributes();
-    console.log("SESSATTR === ", sessAttr);
-    sessAttr.name = 'default';
-    sessAttr.gender = 'default';
     const speechIntro = 'Your name means: ';
     var userNameMeans;
 
-    searchName(URLGET + 'female/' + 'Alexa.htm').then(function(result) {
+    await this.emit(':elicitSlot', 'Name', 'What is your name?');
+    await this.emit(':elicitSlot', 'Gender', 'What is your gender?');
+
+    sessAttr.name = this.event.request.intent.slots.Name.value;
+    sessAttr.gender = this.event.request.intent.slots.Gender.value;
+
+    searchName(URLGET + sessAttr.gender + '/' + sessAttr.name + '.htm').then(function(result) {
       userNameMeans = result;
     });
 
