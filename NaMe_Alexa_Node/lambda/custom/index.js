@@ -177,10 +177,10 @@ const NameMeaningIntentHandler = {
     const speechIntro = 'Your name means: ';
     var userNameMeans;
 
-    await this.emit(':elicitSlot', 'Name', 'What is your name?');
-    await this.emit(':elicitSlot', 'Gender', 'What is your gender?');
-
+    this.emit(':elicitSlot', 'Name', 'What is your name?');
     sessAttr.name = this.event.request.intent.slots.Name.value;
+
+    this.emit(':elicitSlot', 'Gender', 'What is your gender?');
     sessAttr.gender = this.event.request.intent.slots.Gender.value;
 
     searchName(URLGET + sessAttr.gender + '/' + sessAttr.name + '.htm').then(function(result) {
