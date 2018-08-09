@@ -1,84 +1,52 @@
 /* eslint-disable  func-names */
 /* eslint-disable  no-console */
 
-const sys = require('util');
+const cheerio = require('cheerio');
 const request = require('request');
 const Alexa = require('ask-sdk-core');
-const htmlparser = require('htmlparser');
-
 const URLGET = 'https://www.kabalarians.com/name-meanings/names/';
 
-const parser = require('himalaya');
-
-//*[@id="headerOL"]
-
-function findValue(obj, value) {
-  /*if key in obj: return obj[key]
-    for k, v in obj.items():
-        if isinstance(v,dict):
-            item = _finditem(v, key)
-            if item is not None:
-                return item*/
-  if (!value) {
-    return null;
-  }
-  //console.log(value);
-  for (key in obj) {
-//    console.log('KEY === ', key, ", VALUE === ", obj);
-    if (obj['attributes'] && obj['attributes'][0] && obj['attributes'][0]['value'] && obj['tagName'] == 'div') {    
-      if (obj['attributes'][0]['value'] == value) {
-        console.log('BIG === ', obj);//, key, value);
-	return obj['children'];
-      }
-    } else if (obj[key] !== null && obj[key] instanceof Object) {
-      findValue(obj[key], value);
-    }
-  }
-  return null;
-}
-
-function parseReq(obj) {
-//  console.log(obj);
-//  console.log('VALUE FOUND === ', findValue(obj, "headerOL"));
-}
-
 function reqGet(url) {
-  //console.log(url);
-  request(url, function (error, response, body) {
-//    console.log(body);
-    var raw = body;
-    var cheerio = require('cheerio');
-    $ = cheerio.load(raw);
-    //console.log($);
-    $('#headerOL li').each(function() {
-      console.log($(this).text());
+  var resp;
+
+  return new Promise(function(resolve, reject) {
+    request(url, function (error, response, body) {
+      resp = body;
+      resolve(resp);
     });
-    //const html = fs.readFileSync(raw, {encoding: 'utf8'});
-    //const json = parser.parse(raw);
-//    console.log('👉', json);
-    /*var handler = new htmlparser.DefaultHandler;
-    var parser = new htmlparser.Parser(handler);
-    parser.parseComplete(raw);
-    var str = sys.inspect(handler.dom, false, null);*/
-    //return parseReq(json);
   });
 }
 
-reqGet(URLGET + 'female/' + 'Alexa.htm');
+async function searchName(url) {
+  var result = await reqGet(url);
+  var $ = cheerio.load(result);
+  var res = [];
+  $('#headerOL li').each(function() {
+    res.push($(this).text());
+  });
+  return res;
+}
+
+/*var re;
+searchName(URLGET + 'female/' + 'Alexa.htm').then(function(result) {
+  re = result;
+  console.log(re);
+});*/
 
 const LaunchRequestHandler = {
   canHandle(handlerInput) {
     return handlerInput.requestEnvelope.request.type === 'LaunchRequest';
   },
-  handle(handlerInput) {
-    const speechIntro = 'Welcome to Name Analysis. Everyone has meaning behind their names. For instance, Alexa means this.'
-    const speechExample = reqGet(URLGET + 'female/' + 'Alexa.htm');//selenium;
-    const speechCap = 'Please tell me your first name…';
-
-    var speechText = speechIntro + speechExample + speechCap;
-
-//    var speechQuery
-
+  async handle(handlerInput) {
+    
+    const speechIntro = 'Welcome to Name Analysis. Everyone has meaning behind their names. For instance, Alexa means this: ';
+    var speechExample;
+    var speechText;
+    const speechCap = 'Please tell me your first name...';
+    searchName(URLGET + 'female/' + 'Alexa.htm').then(function(result) {
+      speechExample = result;
+    });
+    speechText = speechIntro + speechExample + speechCap;
     return handlerInput.responseBuilder
       .speak(speechText)
       .reprompt(speechText)
@@ -87,18 +55,19 @@ const LaunchRequestHandler = {
   },
 };
 
-const NameMeaningHandler = {
+const NameMeaningIntent = {
   canHandle(handlerInput) {
-    return handlerInput.requestEnvelope.request.type === 'IntentRequest'
-      && handlerInput.requestEnvelope.request.intent.name === 'NameMeaningIntent';
+    const attrMan = handlerInput.attributesManager;
+    attrMan.setSessionAttributes('name', 'gender');
+    const sessAttr = attrMan.getSessionAttributes();
+    console.log(sessAttr);
+    return handlerInput.requestEnvelope.request.type === 'IntentRequest';
+//      && handlerInput.requestEnvelope.request.intent.name === 'NameMeaningIntent';
   },
-  handle(handlerInput) {
-    this.attributes.name = 'default';//getname;
-    this.attributes.gender = 'default';//getgender
-
-    var speechQuery = getReq(	URLGET
-    				+this.attributes.gender + '/'
-				+ this.attributes.name + '.htm');/*perform GET
+  async handle(handlerInput) {
+    sessAttr.name = 'default';
+    sessAttr.gender = 'default';
+    var speechQuery = reqGet(URLGET+this.attributes.gender+'/'+this.attributes.name+'.htm',function(response){doStuff(response[0]);});/*perform GET
                       (his.attributes.name, this.attributes.gender)*/
 
     return handlerInput.responseBuilder
@@ -170,10 +139,11 @@ const skillBuilder = Alexa.SkillBuilders.custom();
 exports.handler = skillBuilder
   .addRequestHandlers(
     LaunchRequestHandler,
-    NameMeaningHandler,
+    NameMeaningIntent,
     HelpIntentHandler,
     CancelAndStopIntentHandler,
     SessionEndedRequestHandler
   )
   .addErrorHandlers(ErrorHandler)
   .lambda();
+

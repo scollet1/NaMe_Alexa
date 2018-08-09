@@ -5,11 +5,11 @@
         "en-US": {
           "summary": "Sample Short Description",
           "examplePhrases": [
-            "Alexa open hello world",
-            "hello",
+            "Alexa open name analysis",
+            "name meaning",
             "help"
           ],
-          "name": "Hello World",
+          "name": "NaMe",
           "description": "Sample Full Description"
         }
       },
@@ -21,7 +21,7 @@
     "apis": {
       "custom": {
         "endpoint": {
-          "sourceDir": "./lambda/us-east-1_ask-custom-helloworld-default"
+          "sourceDir": "./lambda/custom"
         }
       }
     },
