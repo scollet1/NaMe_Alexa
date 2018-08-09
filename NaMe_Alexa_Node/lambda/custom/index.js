@@ -38,15 +38,25 @@ const LaunchRequestHandler = {
     return handlerInput.requestEnvelope.request.type === 'LaunchRequest';
   },
   async handle(handlerInput) {
-    
+    const attrMan = handlerInput.attributesManager;
+    const attr = await attrMan.getPersistantAttributes || {};
+    if (Object.keys(attr) === 0) {
+      attr.name = 'default';
+      attr.gender = 'default';
+      attr.startedSkill = false;
+    }
+    attrMan.setSessionAttributes(attr);
+    console.log('ATTRIBUTES === ', attrMan.getSessionAttributes());
     const speechIntro = 'Welcome to Name Analysis. Everyone has meaning behind their names. For instance, Alexa means this: ';
     var speechExample;
     var speechText;
     const speechCap = 'Please tell me your first name...';
-    searchName(URLGET + 'female/' + 'Alexa.htm').then(function(result) {
+    await searchName(URLGET + 'female/' + 'Alexa.htm').then(function(result) {
       speechExample = result;
     });
     speechText = speechIntro + speechExample + speechCap;
+    attr.startedSkill = true;
+    attrMan.setSessionAttributes(attr);
     return handlerInput.responseBuilder
       .speak(speechText)
       .reprompt(speechText)
@@ -55,24 +65,109 @@ const LaunchRequestHandler = {
   },
 };
 
-const NameMeaningIntent = {
+/*
+ *
+ * SOURCED FROM : https://github.com/alexa/skill-sample-nodejs-highlowgame/blob/master/lambda/custom/index.js
+ *
+ */
+
+const YesIntent = {
   canHandle(handlerInput) {
-    const attrMan = handlerInput.attributesManager;
-    attrMan.setSessionAttributes('name', 'gender');
-    const sessAttr = attrMan.getSessionAttributes();
-    console.log(sessAttr);
-    return handlerInput.requestEnvelope.request.type === 'IntentRequest';
-//      && handlerInput.requestEnvelope.request.intent.name === 'NameMeaningIntent';
+    // only start a new game if yes is said when not playing a game.
+    let isCurrentlyPlaying = false;
+    const request = handlerInput.requestEnvelope.request;
+    const attributesManager = handlerInput.attributesManager;
+    const sessionAttributes = attributesManager.getSessionAttributes();
+
+    if (sessionAttributes.startedSkill &&
+        sessionAttributes.startedSkill == true) {
+      isCurrentlyPlaying = true;
+    }
+
+    return !isCurrentlyPlaying && request.type === 'IntentRequest' && request.intent.name === 'AMAZON.YesIntent';
+  },
+  handle(handlerInput) {
+    const attributesManager = handlerInput.attributesManager;
+    const responseBuilder = handlerInput.responseBuilder;
+    const sessionAttributes = attributesManager.getSessionAttributes();
+
+    sessionAttributes.startedSkill = true;
+
+    return responseBuilder
+      .speak('Tell me your name.')
+      .reprompt('Say your name.')
+      .getResponse();
+  },
+};
+
+
+const NoIntent = {
+  canHandle(handlerInput) {
+    // only treat no as an exit when outside a game
+    let isCurrentlyPlaying = false;
+    const request = handlerInput.requestEnvelope.request;
+    const attributesManager = handlerInput.attributesManager;
+    const sessionAttributes = attributesManager.getSessionAttributes();
+
+    if (sessionAttributes.startedSkill &&
+        sessionAttributes.startedSkill == true) {
+      isCurrentlyPlaying = true;
+    }
+
+    return !isCurrentlyPlaying && request.type === 'IntentRequest' && request.intent.name === 'AMAZON.NoIntent';
   },
   async handle(handlerInput) {
+    const attributesManager = handlerInput.attributesManager;
+    const responseBuilder = handlerInput.responseBuilder;
+    const sessionAttributes = attributesManager.getSessionAttributes();
+
+    sessionAttributes.startedSkill = false;
+    attributesManager.setPersistentAttributes(sessionAttributes);
+
+    //await attributesManager.savePersistentAttributes();
+
+    return responseBuilder.speak('Ok, see you next time!').getResponse();
+  },
+};
+
+/*
+ *
+ * END SOURCE
+ *
+ */
+
+const NameMeaningIntentHandler = {
+  canHandle(handlerInput) {
+    let isStarted = false;
+    const attrMan = handlerInput.attributesManager;
+    const sessAttr = attrMan.getSessionAttributes();
+    console.log(sessAttr);
+    
+    if (sessAttr.startedSkill &&
+        sessAttr.StartedSkill == true) {
+      isStarted = true;
+    }
+    return handlerInput.requestEnvelope.request.type === 'IntentRequest';/* &&
+	   handlerInput.requestEnvelope.request.intent.name === 'NameMeaningIntent';  */
+  },
+  async handle(handlerInput) {
+    const attrMan = handlerInput.attributesManager;
+    const sessAttr = attrMan.getSessionAttributes();
+    console.log("SESSATTR === ", sessAttr);
     sessAttr.name = 'default';
     sessAttr.gender = 'default';
-    var speechQuery = reqGet(URLGET+this.attributes.gender+'/'+this.attributes.name+'.htm',function(response){doStuff(response[0]);});/*perform GET
-                      (his.attributes.name, this.attributes.gender)*/
+    const speechIntro = 'Your name means: ';
+    var userNameMeans;
+
+    searchName(URLGET + 'female/' + 'Alexa.htm').then(function(result) {
+      userNameMeans = result;
+    });
+
+    var speechText = speechIntro + userNameMeans;
 
     return handlerInput.responseBuilder
-      .speak('Your name means: ' + speechQuery)
-      .withSimpleCard('Your name means: ', speechQuery)
+      .speak(speechText)
+      .withSimpleCard(speechText)
       .getResponse();
   },
 };
@@ -139,10 +234,12 @@ const skillBuilder = Alexa.SkillBuilders.custom();
 exports.handler = skillBuilder
   .addRequestHandlers(
     LaunchRequestHandler,
-    NameMeaningIntent,
+    NameMeaningIntentHandler,
     HelpIntentHandler,
     CancelAndStopIntentHandler,
-    SessionEndedRequestHandler
+    SessionEndedRequestHandler,
+    YesIntent,
+    NoIntent
   )
   .addErrorHandlers(ErrorHandler)
   .lambda();
