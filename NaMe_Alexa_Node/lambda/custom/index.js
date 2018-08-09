@@ -24,7 +24,7 @@ async function searchName(url) {
   $('#headerOL li').each(function() {
     res.push($(this).text());
   });
-  return res;
+  return res[1];
 }
 
 /*var re;
@@ -47,10 +47,10 @@ const LaunchRequestHandler = {
     }
     attrMan.setSessionAttributes(attr);
     console.log('ATTRIBUTES === ', attrMan.getSessionAttributes());
-    const speechIntro = 'Welcome to Name Analysis. Everyone has meaning behind their names. For instance, Alexa means this: ';
+    const speechIntro = 'Welcome to Name Meaning. Everyone has meaning behind their names. For instance, Alexa means this: ';
     var speechExample;
     var speechText;
-    const speechCap = 'Please tell me your first name...';
+    const speechCap = 'Would you like to know the meaning behind your first name?';
     await searchName(URLGET + 'female/' + 'Alexa.htm').then(function(result) {
       speechExample = result;
     });
@@ -59,7 +59,6 @@ const LaunchRequestHandler = {
     return handlerInput.responseBuilder
       .speak(speechText)
       .reprompt(speechText)
-      .withSimpleCard(speechText)
       .getResponse();
   },
 };
@@ -140,8 +139,8 @@ const NameMeaningIntentHandler = {
         sessAttr.StartedSkill == true) {
       isStarted = true;
     }
-    return isStarted && handlerInput.requestEnvelope.request.type === 'IntentRequest';/* &&
-	   handlerInput.requestEnvelope.request.intent.name === 'NameMeaningIntent';  */
+    return isStarted && handlerInput.requestEnvelope.request.type === 'IntentRequest' &&
+	   handlerInput.requestEnvelope.request.intent.name === 'NameMeaningIntent';
   },
   async handle(handlerInput) {
     const attrMan = handlerInput.attributesManager;
@@ -160,7 +159,6 @@ const NameMeaningIntentHandler = {
 
     return handlerInput.responseBuilder
       .speak(speechText)
-      .withSimpleCard(speechText)
       .getResponse();
   },
 };
@@ -176,7 +174,6 @@ const HelpIntentHandler = {
     return handlerInput.responseBuilder
       .speak(speechText)
       .reprompt(speechText)
-      .withSimpleCard('Hello World', speechText)
       .getResponse();
   },
 };
@@ -192,7 +189,6 @@ const CancelAndStopIntentHandler = {
 
     return handlerInput.responseBuilder
       .speak(speechText)
-      .withSimpleCard('Hello World', speechText)
       .getResponse();
   },
 };
