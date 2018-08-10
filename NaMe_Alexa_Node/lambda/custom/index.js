@@ -167,24 +167,13 @@ const GenderIntentHandler = {
     let isStarted = false;
     const attrMan = handlerInput.attributesManager;
     const sessAttr = attrMan.getSessionAttributes();
-//    console.log('NAMEANING SESSATTR === ', sessAttr);
 
-/*    if (sessAttr.startedSkill &&
-        sessAttr.StartedSkill === true) {
-      isStarted = true;
-    }
-
-    console.log('TESTING TO SEE IF INTENT IS RETURNED FALSE OR TRUE === ',
-           isStarted, handlerInput.requestEnvelope.request.type === 'IntentRequest');*/
-
-    console.log('TESTING SESSATTRs GENDER BEFORE RETURN === ', sessAttr, handlerInput.requestEnvelope.request.type, handlerInput.requestEnvelope.request.intent.name);
     return sessAttr.startedSkill && handlerInput.requestEnvelope.request.type === 'IntentRequest'
            && handlerInput.requestEnvelope.request.intent.name === 'GenderIntent';
   },
   async handle(handlerInput) {
     const attrMan = handlerInput.attributesManager;
     const sessAttr = attrMan.getSessionAttributes();
-    const speechIntro = 'Your name means: ';
     var userNameMeans;
 
     console.log('GENDER INTENT HANDLER ISSUES === ', handlerInput.requestEnvelope.request.intent.slots);
@@ -205,16 +194,18 @@ const GenderIntentHandler = {
         userNameMeans = result;
       });
 
+      const speechIntro = sessAttr.name + ' means: ';
       var speechText = speechIntro + userNameMeans;
 
       return handlerInput.responseBuilder
         .speak(speechText)
+	.reprompt('I hope that means something to you...')
         .getResponse();
     } else {
       console.log('DEBUG 3 SESSATTR === ', sessAttr);
       return handlerInput.responseBuilder
         .speak('What is your name?')
-	.reprompt('What was that you little bitch?')
+	.reprompt('What is your name?')
         .getResponse();
     }
   },
@@ -225,24 +216,13 @@ const NameIntentHandler = {
     let isStarted = false;
     const attrMan = handlerInput.attributesManager;
     const sessAttr = attrMan.getSessionAttributes();
-    console.log('NAMEANING SESSATTR === ', sessAttr);
 
-/*    if (sessAttr.startedSkill &&
-        sessAttr.StartedSkill === true) {
-      isStarted = true;
-    }
-
-    console.log('TESTING TO SEE IF INTENT IS RETURNED FALSE OR TRUE === ',
-           isStarted, handlerInput.requestEnvelope.request.type === 'IntentRequest');*/
-
-    console.log('TESTING SESSATTRs NAME BEFORE RETURN === ', sessAttr, handlerInput.requestEnvelope.request.type, handlerInput.requestEnvelope.request.intent.name);
     return sessAttr.startedSkill && handlerInput.requestEnvelope.request.type === 'IntentRequest'
            && handlerInput.requestEnvelope.request.intent.name === 'NameIntent';
   },
   async handle(handlerInput) {
     const attrMan = handlerInput.attributesManager;
     const sessAttr = attrMan.getSessionAttributes();
-    const speechIntro = 'Your name means: ';
     var userNameMeans;
 
     console.log('NAME INTENT HANDLER ISSUES === ', handlerInput.requestEnvelope.request.intent.slots);
@@ -256,8 +236,6 @@ const NameIntentHandler = {
 		      .value.replace(/^\w/, c => c.toUpperCase());
       console.log('DEBUG 0 SESSATTR === ', sessAttr);
     }
-//    attrMan.setSessionAttributes(sessAttr);
-
 
     if (sessAttr.gender && sessAttr.gender !== 'default') {
       console.log('NAME-ASS NAME MEANING === ', URLGET + sessAttr.gender + '/' + sessAttr.name + '.htm');
@@ -265,56 +243,63 @@ const NameIntentHandler = {
         userNameMeans = result;
       });
       
+      const speechIntro = sessAttr.name + ' means: ';
       var speechText = speechIntro + userNameMeans;
       
       return handlerInput.responseBuilder
         .speak(speechText)
+	.reprompt('I hope that means something to you...')
 	.getResponse();
     } 
     console.log('DEBUG 1 SESSATTR === ', sessAttr);
     console.log('NEEDS GENDER');
     return handlerInput.responseBuilder
       .speak('What is your gender?')
-      .reprompt('What was that you little bitch?')
+      .reprompt('What is your gender?')
       .getResponse();
   },
 };
 
-/*const NameMeaningIntentHandler = {
+const NameMeaningRecallIntentHandler = {
   canHandle(handlerInput) {
-    let isStarted = false;
     const attrMan = handlerInput.attributesManager;
     const sessAttr = attrMan.getSessionAttributes();
-//    console.log('NAMEANING SESSATTR === ', sessAttr);
     
-    if (sessAttr.startedSkill &&
-        sessAttr.StartedSkill === true) {
-      isStarted = true;
-    }
-
-    console.log('TESTING TO SEE IF INTENT IS RETURNED FALSE OR TRUE === ',
-	   isStarted, handlerInput.requestEnvelope.request.type === 'IntentRequest');
-
-    return sessAttr.startedSkill && handlerInput.requestEnvelope.request.type === 'IntentRequest';
-//	   && handlerInput.requestEnvelope.request.intent.name === 'NameMeaningIntent';
+    return sessAttr.startedSkill && handlerInput.requestEnvelope.request.type === 'IntentRequest'
+	   && handlerInput.requestEnvelope.request.intent.name === 'NameMeaningRecallIntent';
   },
   async handle(handlerInput) {
     const attrMan = handlerInput.attributesManager;
     const sessAttr = attrMan.getSessionAttributes();
-    const speechIntro = 'Your name means: ';
     var userNameMeans;
 
-    searchName(URLGET + sessAttr.gender + '/' + sessAttr.name + '.htm').then(function(result) {
-      userNameMeans = result;
-    });
+    console.log("NAME RECALL === ", sessAttr);
 
-    var speechText = speechIntro + userNameMeans;
+    if (sessAttr.name === 'default') {
+      return handlerInput.responseBuilder
+        .speak('What is your name?')
+        .reprompt('What is your name?')
+        .getResponse();
+    } else if (sessAttr.gender === 'default') {
+      return handlerInput.responseBuilder
+        .speak('What is your gender?')
+        .reprompt('What is your gender?')
+        .getResponse();
+    } else {
+      await searchName(URLGET + sessAttr.gender + '/' + sessAttr.name + '.htm').then(function(result) {
+        userNameMeans = result;
+      });
 
-    return handlerInput.responseBuilder
-      .speak(speechText)
-      .getResponse();
+      const speechIntro = sessAttr.name + ' means: ';
+      var speechText = speechIntro + userNameMeans;
+
+      return handlerInput.responseBuilder
+        .speak(speechText)
+	.reprompt('I hope that means something to you...')
+        .getResponse();
+    }
   },
-};*/
+};
 
 const HelpIntentHandler = {
   canHandle(handlerInput) {
@@ -378,6 +363,7 @@ exports.handler = skillBuilder
     LaunchRequestHandler,
     NameIntentHandler,
     GenderIntentHandler,
+    NameMeaningRecallIntentHandler,
     HelpIntentHandler,
     CancelAndStopIntentHandler,
     SessionEndedRequestHandler,
