@@ -71,7 +71,7 @@ const LaunchRequestHandler = {
     speechText = speechIntro + speechExample + speechCap;
     return handlerInput.responseBuilder
       .speak(speechText)
-      .reprompt(speechText)
+      .reprompt('Yes or no to confirm, quit or exit to leave.')
       .getResponse();
   },
 };
@@ -111,17 +111,11 @@ const YesIntent = {
 const NoIntent = {
   canHandle(handlerInput) {
     // only treat no as an exit when outside a game
-    let isCurrentlyPlaying = false;
     const request = handlerInput.requestEnvelope.request;
     const attributesManager = handlerInput.attributesManager;
     const sessionAttributes = attributesManager.getSessionAttributes();
 
-    if (sessionAttributes.startedSkill &&
-        sessionAttributes.startedSkill == true) {
-      isCurrentlyPlaying = true;
-    }
-
-    return !isCurrentlyPlaying && request.type === 'IntentRequest' && request.intent.name === 'AMAZON.NoIntent';
+    return request.type === 'IntentRequest' && request.intent.name === 'AMAZON.NoIntent';
   },
   async handle(handlerInput) {
     const attributesManager = handlerInput.attributesManager;
@@ -171,7 +165,12 @@ const GenderIntentHandler = {
       const speechIntro = sessAttr.name + ' means: ';
       var speechText = speechIntro + userNameMeans;
 
-      
+      if (!userNameMeans || userNameMeans === 'undefined') {
+        return handlerInput.responseBuilder
+          .speak('I\'m sorry, I don\'t know that one. Would you like to try another name?')
+          .reprompt('There is no entry for this name...')
+          .getResponse();
+      }
 
       return handlerInput.responseBuilder
         .speak(speechText + 'Would you like to try another name?')
@@ -209,7 +208,14 @@ const NameIntentHandler = {
       await searchName(URLGET + sessAttr.gender + '/' + sessAttr.name + '.htm').then(function(result) {
         userNameMeans = result;
       });
-      
+   
+       if (!userNameMeans || userNameMeans === 'undefined') {
+        return handlerInput.responseBuilder
+          .speak('I\'m sorry, I don\'t know that one. Would you like to try another name?')
+          .reprompt('There is no entry for this name...')
+          .getResponse();
+      }
+
       const speechIntro = sessAttr.name + ' means: ';
       var speechText = speechIntro + userNameMeans;
       
@@ -220,7 +226,7 @@ const NameIntentHandler = {
     } 
     return handlerInput.responseBuilder
       .speak('What is your gender?')
-      .reprompt('What is your gender?')
+      .reprompt('I don\'t know about that one...')
       .getResponse();
   },
 };
@@ -246,12 +252,19 @@ const NameMeaningRecallIntentHandler = {
     } else if (sessAttr.gender === 'default') {
       return handlerInput.responseBuilder
         .speak('What is your gender?')
-        .reprompt('What is your gender?')
+        .reprompt('I don\'t know about that one...')
         .getResponse();
     } else {
       await searchName(URLGET + sessAttr.gender + '/' + sessAttr.name + '.htm').then(function(result) {
         userNameMeans = result;
       });
+
+      if (!userNameMeans || userNameMeans === 'undefined') {
+        return handlerInput.responseBuilder
+          .speak('I\'m sorry, I don\'t know that one. Would you like to try another name?')
+          .reprompt('There is no entry for this name...')
+          .getResponse();
+      }
 
       const speechIntro = sessAttr.name + ' means: ';
       var speechText = speechIntro + userNameMeans;
