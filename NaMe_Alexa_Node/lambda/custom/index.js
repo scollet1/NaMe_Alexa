@@ -5,6 +5,7 @@ const cheerio = require('cheerio');
 const request = require('request');
 const Alexa = require('ask-sdk-core');
 const URLGET = 'https://www.kabalarians.com/name-meanings/names/';
+const items = ['Male', 'Female'];
 
 function reqGet(url) {
   var resp;
@@ -21,17 +22,30 @@ async function searchName(url) {
   var result = await reqGet(url);
   var $ = cheerio.load(result);
   var res = [];
+
   $('#headerOL li').each(function() {
     res.push($(this).text());
   });
   return res[1];
 }
 
-/*var re;
+
+
+/*
+ * TEST ME *********************************************************\/
+ * 
+
+var re;
 searchName(URLGET + 'female/' + 'Alexa.htm').then(function(result) {
   re = result;
   console.log(re);
-});*/
+});
+
+*
+* ******************************************************************\/
+*/
+
+
 
 const LaunchRequestHandler = {
   canHandle(handlerInput) {
@@ -86,10 +100,6 @@ const YesIntent = {
     sessAttr.gender       = 'default';
     sessAttr.startedSkill = true;
 
-    //attrMan.setSessionAttributes(sessAttr);
-
-    console.log("YES INTENT SESSATTR === ", sessAttr);
-
     return responseBuilder
       .speak('Okay, tell me your name.')
       .reprompt()
@@ -119,9 +129,6 @@ const NoIntent = {
     const sessionAttributes = await attributesManager.getSessionAttributes();
 
     sessionAttributes.startedSkill = false;
-//    attributesManager.setPersistentAttributes(sessionAttributes);
-
-    //await attributesManager.savePersistentAttributes();
 
     return responseBuilder.speak('Ok, see you next time!').getResponse();
   },
@@ -132,35 +139,6 @@ const NoIntent = {
  * END SOURCE
  *
  */
-
-/*const AnswerIntentHandler = {
-  canHandle(handlerInput) {
-    let stateful = false;
-    const attrMan = handlerInput.attributeManager;
-    const sessAttr = attrMan.getSessionAttributes();
-    console.log(sessAttr);
-
-    if (sessAttr.startedSkill &&
-        sessAttr.startedSkill == true &&
-        sessAttr.name &&
-	sessAttr.gender) {
-	stateful = true;
-    }
-    return stateful && handlerInput.requestEnvelope.request.type == 'IntentRequest' &&
-           handlerInput.requestEnvelope.request.intent.name === 'AnswerIntent';
-
-  },
-  handle(handlerInput) {
-    const attrMan = handlerInput.attributeManager;
-    const sessAttr = attrMan.getSessionAttributes();
-
-    this.emit(':elicitSlot', 'Name', 'What is your name?');
-    this.emit(':elicitSlot', 'Gender', 'What is your gender?');
-    
-    sessAttr.name = this.event.request.intent.slots.Name.value;
-    sessAttr.gender = this.event.request.intent.slots.Gender.value;
-  },
-};*/
 
 const GenderIntentHandler = {
   canHandle(handlerInput) {
@@ -176,20 +154,16 @@ const GenderIntentHandler = {
     const sessAttr = attrMan.getSessionAttributes();
     var userNameMeans;
 
-    console.log('GENDER INTENT HANDLER ISSUES === ', handlerInput.requestEnvelope.request.intent.slots);
-
     if (sessAttr.gender === 'default') {
       sessAttr.gender = handlerInput.requestEnvelope
 		        .request.intent.slots.Gender
 		        .value.replace(/^\w/, c => c.toUpperCase());
-      console.log('DEBUG 2 SESSATTR === ', sessAttr);
+      if (sessAttr.gender !== 'Male' && sessAttr.gender !== 'Female') {
+        sessAttr.gender = items[Math.floor(Math.random()*items.length)];
+      }
     }
-  //  attrMan.setSessionAttributes(sessAttr);
-
-    console.log('DEBUGGING GENDER INTENT SESSION ATTR === ', sessAttr);
 
     if (sessAttr.name && sessAttr.name !== 'default') {
-      console.log('GENDER-ASS NAME MEANING === ', URLGET + sessAttr.gender + '/' + sessAttr.name + '.htm');
       await searchName(URLGET + sessAttr.gender + '/' + sessAttr.name + '.htm').then(function(result) {
         userNameMeans = result;
       });
@@ -197,12 +171,13 @@ const GenderIntentHandler = {
       const speechIntro = sessAttr.name + ' means: ';
       var speechText = speechIntro + userNameMeans;
 
+      
+
       return handlerInput.responseBuilder
-        .speak(speechText)
+        .speak(speechText + 'Would you like to try another name?')
 	.reprompt('I hope that means something to you...')
         .getResponse();
     } else {
-      console.log('DEBUG 3 SESSATTR === ', sessAttr);
       return handlerInput.responseBuilder
         .speak('What is your name?')
 	.reprompt('What is your name?')
@@ -225,20 +200,12 @@ const NameIntentHandler = {
     const sessAttr = attrMan.getSessionAttributes();
     var userNameMeans;
 
-    console.log('NAME INTENT HANDLER ISSUES === ', handlerInput.requestEnvelope.request.intent.slots);
-    console.log('DEBUGGING NAME INTENT SESSION ATTR === ', sessAttr);
-
-    console.log('MAKING SURE SESSION VARS ARE DEFAULT === ', sessAttr);
-
     if (sessAttr.name === 'default') {
       sessAttr.name = handlerInput.requestEnvelope
 		      .request.intent.slots.Name
 		      .value.replace(/^\w/, c => c.toUpperCase());
-      console.log('DEBUG 0 SESSATTR === ', sessAttr);
     }
-
     if (sessAttr.gender && sessAttr.gender !== 'default') {
-      console.log('NAME-ASS NAME MEANING === ', URLGET + sessAttr.gender + '/' + sessAttr.name + '.htm');
       await searchName(URLGET + sessAttr.gender + '/' + sessAttr.name + '.htm').then(function(result) {
         userNameMeans = result;
       });
@@ -247,12 +214,10 @@ const NameIntentHandler = {
       var speechText = speechIntro + userNameMeans;
       
       return handlerInput.responseBuilder
-        .speak(speechText)
+        .speak(speechText + 'Would you like to try another name?')
 	.reprompt('I hope that means something to you...')
 	.getResponse();
     } 
-    console.log('DEBUG 1 SESSATTR === ', sessAttr);
-    console.log('NEEDS GENDER');
     return handlerInput.responseBuilder
       .speak('What is your gender?')
       .reprompt('What is your gender?')
@@ -273,8 +238,6 @@ const NameMeaningRecallIntentHandler = {
     const sessAttr = attrMan.getSessionAttributes();
     var userNameMeans;
 
-    console.log("NAME RECALL === ", sessAttr);
-
     if (sessAttr.name === 'default') {
       return handlerInput.responseBuilder
         .speak('What is your name?')
@@ -294,7 +257,7 @@ const NameMeaningRecallIntentHandler = {
       var speechText = speechIntro + userNameMeans;
 
       return handlerInput.responseBuilder
-        .speak(speechText)
+        .speak(speechText + 'Would you like to try another name?')
 	.reprompt('I hope that means something to you...')
         .getResponse();
     }
