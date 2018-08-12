@@ -8,6 +8,10 @@ const URLGET = 'https://www.kabalarians.com/name-meanings/names/';
 const items = ['Male', 'Female'];
 
 function reqGet(url) {
+  /* reqGet ingests a p(URL) and makes an async GET
+   * request to the web address. It returns a
+   * resolved response in the form of an HTML body
+   */
   var resp;
 
   return new Promise(function(resolve, reject) {
@@ -19,6 +23,11 @@ function reqGet(url) {
 }
 
 async function searchName(url) {
+  /* searchName ingests a p(URL),
+   * parses the HTML DOM and
+   * returns the second index
+   * to our string array
+   */
   var result = await reqGet(url);
   var $ = cheerio.load(result);
   var res = [];
@@ -28,8 +37,6 @@ async function searchName(url) {
   });
   return res[1];
 }
-
-
 
 /*
  * TEST ME *********************************************************\/
@@ -44,8 +51,6 @@ searchName(URLGET + 'female/' + 'Alexa.htm').then(function(result) {
 *
 * ******************************************************************\/
 */
-
-
 
 const LaunchRequestHandler = {
   canHandle(handlerInput) {
@@ -85,9 +90,15 @@ const LaunchRequestHandler = {
 const YesIntent = {
   canHandle(handlerInput) {
     // only start a new game if yes is said when not playing a game.
+    let isStarted = false;
     const request = handlerInput.requestEnvelope.request;
     const attributesManager = handlerInput.attributesManager;
     const sessionAttributes = attributesManager.getSessionAttributes();
+
+    if (sessionAttributes.startedSkill &&
+	sessionAttributes.startedSkill == true) {
+          isStarted = true;
+    }
 
     return request.type === 'IntentRequest' && request.intent.name === 'AMAZON.YesIntent';
   },
@@ -178,7 +189,7 @@ const GenderIntentHandler = {
         .getResponse();
     } else {
       return handlerInput.responseBuilder
-        .speak('What is your name?')
+        .speak('Your gender is ' + sessAttr.gender + '. ' + 'What is your name?')
 	.reprompt('What is your name?')
         .getResponse();
     }
@@ -225,7 +236,7 @@ const NameIntentHandler = {
 	.getResponse();
     } 
     return handlerInput.responseBuilder
-      .speak('What is your gender?')
+      .speak('Your name is ' + sessAttr.name + '. ' + 'What is your gender?')
       .reprompt('I don\'t know about that one...')
       .getResponse();
   },
@@ -277,13 +288,35 @@ const NameMeaningRecallIntentHandler = {
   },
 };
 
+const RepromptIntentHandler = {
+  canHandle(handlerInput) {
+    const attrMan = handlerInput.attributesManager;
+    const sessAttr = attrMan.getSessionAttributes();
+
+    return sessAttr.startedSkill && handlerInput.requestEnvelope.request.type === 'IntentRequest'
+      && handlerInput.requestEnvelope.request.intent.name === 'RepromptIntent';
+  },
+  handle(handlerInput) {
+    const attrMan = handlerInput.attributesManager;
+    const sessAttr = attrMan.getSessionAttributes();
+
+    sessAttr.startedSkill = false;
+
+    return handlerInput.responseBuilder
+      .speak('Would you like to start over?')
+      .reprompt('Would you like to start over?')
+      .getResponse();
+  },
+};
+
+
 const HelpIntentHandler = {
   canHandle(handlerInput) {
     return handlerInput.requestEnvelope.request.type === 'IntentRequest'
       && handlerInput.requestEnvelope.request.intent.name === 'AMAZON.HelpIntent';
   },
   handle(handlerInput) {
-    const speechText = 'You can say hello to me!';
+    const speechText = 'Ask me what your name means!';
 
     return handlerInput.responseBuilder
       .speak(speechText)
@@ -326,8 +359,8 @@ const ErrorHandler = {
     console.log(`Error handled: ${error.message}`);
 
     return handlerInput.responseBuilder
-      .speak('Sorry, I can\'t understand the command. Please say again.')
-      .reprompt('Sorry, I can\'t understand the command. Please say again.')
+      .speak('Sorry, I don\'t understand. Try confirming with \'yes\', \'no\', or responding to the prompt.')
+      .reprompt('Something probably went wrong. Blame the Samurai who programmed me.')
       .getResponse();
   },
 };
@@ -343,6 +376,7 @@ exports.handler = skillBuilder
     HelpIntentHandler,
     CancelAndStopIntentHandler,
     SessionEndedRequestHandler,
+    RepromptIntentHandler,
     YesIntent,
     NoIntent
   )
