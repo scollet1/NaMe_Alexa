@@ -14,7 +14,7 @@
         },
         "lambda": [
           {
-            "arn": "arn:aws:lambda:us-east-1:900054410122:function:ask-custom-helloworld-default",
+            "arn": "arn:aws:lambda:...",
             "awsRegion": "us-east-1",
             "functionName": "ask-custom-helloworld-default",
             "alexaUsage": [
@@ -29,7 +29,7 @@
           "apis": {
             "custom": {
               "endpoint": {
-                "uri": "arn:aws:lambda:us-east-1:900054410122:function:ask-custom-helloworld-default"
+                "uri": "arn:aws:lambda:...
               }
             }
           }
